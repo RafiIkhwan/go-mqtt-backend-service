@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -13,6 +14,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/", s.HelloWorldHandler)
 
 	mux.HandleFunc("/health", s.healthHandler)
+	
+	mux.HandleFunc("/api/data/latest", s.GetLatestData)
+	mux.HandleFunc("/api/data/history", s.GetHistoryData)
+	mux.HandleFunc("/api/data/average", s.GetAverageData)
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
@@ -38,7 +43,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resp := map[string]string{"message": "Hello World"}
+	resp := map[string]string{"message": "Hello World!"}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
@@ -60,4 +65,64 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(resp); err != nil {
 		log.Printf("Failed to write response: %v", err)
 	}
+}
+
+
+func (s *Server) GetLatestData(w http.ResponseWriter, r *http.Request) {
+	data, err := s.db.GetLatestData()
+	if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+	}
+	json.NewEncoder(w).Encode(data)
+}
+
+func (s *Server) GetHistoryData(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.URL.Query().Get("device_id")
+	start := r.URL.Query().Get("start")
+	end := r.URL.Query().Get("end")
+
+	startDate, err := time.Parse(time.RFC3339, start)
+	if err != nil {
+			http.Error(w, "Invalid start date format", http.StatusBadRequest)
+			return
+	}
+
+	endDate, err := time.Parse(time.RFC3339, end)
+	if err != nil {
+			http.Error(w, "Invalid end date format", http.StatusBadRequest)
+			return
+	}
+
+	data, err := s.db.GetHistoryData(deviceID, startDate, endDate)
+	if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+	}
+	json.NewEncoder(w).Encode(data)
+}
+
+func (s *Server) GetAverageData(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.URL.Query().Get("device_id")
+	start := r.URL.Query().Get("start")
+	end := r.URL.Query().Get("end")
+
+	startDate, err := time.Parse(time.RFC3339, start)
+	if err != nil {
+			http.Error(w, "Invalid start date format", http.StatusBadRequest)
+			return
+	}
+
+	endDate, err := time.Parse(time.RFC3339, end)
+	if err != nil {
+			http.Error(w, "Invalid end date format", http.StatusBadRequest)
+			return
+	}
+
+	data, err := s.db.GetAverageData(deviceID, startDate, endDate)
+	if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+	}
+	json.NewEncoder(w).Encode(data)
 }

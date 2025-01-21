@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"mqtt-backend-service/internal/server"
+	"mqtt-backend-service/internal/database"
+	"mqtt-backend-service/internal/subscribe"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
@@ -40,8 +42,12 @@ func main() {
 
 	server := server.NewServer()
 
+	db := database.New()
+	
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)
+
+	go subscribe.Start(db)
 
 	// Run graceful shutdown in a separate goroutine
 	go gracefulShutdown(server, done)

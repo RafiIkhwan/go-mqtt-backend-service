@@ -11,6 +11,8 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"
+	
+    "mqtt-backend-service/internal/types"
 )
 
 // Service represents a service that interacts with a database.
@@ -19,6 +21,11 @@ type Service interface {
 	// The keys and values in the map are service-specific.
 	Health() map[string]string
 
+	GetLatestData() ([]types.DeviceData, error)
+	GetHistoryData(deviceID string, startDate, endDate time.Time) ([]types.DeviceData, error)
+	GetAverageData(deviceID string, startDate, endDate time.Time) (types.AverageData, error)
+
+	InsertDeviceData(data types.DeviceData) error
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
@@ -103,6 +110,77 @@ func (s *service) Health() map[string]string {
 	}
 
 	return stats
+}
+
+
+func (s *service) GetLatestData() ([]types.DeviceData, error) {
+	rows, err := s.db.Query(`
+			SELECT DISTINCT ON (device_id) device_id, humidity, temperature, timestamp
+			FROM device_data
+			ORDER BY device_id, timestamp DESC
+	`)
+	if err != nil {
+			return nil, err
+	}
+	defer rows.Close()
+
+	var data []types.DeviceData
+	for rows.Next() {
+			var d types.DeviceData
+			if err := rows.Scan(&d.DeviceID, &d.Humidity, &d.Temperature, &d.Timestamp); err != nil {
+					return nil, err
+			}
+			data = append(data, d)
+	}
+	return data, nil
+}
+
+
+func (s *service) GetHistoryData(deviceID string, startDate, endDate time.Time) ([]types.DeviceData, error) {
+	rows, err := s.db.Query(
+			`SELECT device_id, humidity, temperature, timestamp FROM device_data WHERE device_id = $1 AND timestamp BETWEEN $2 AND $3`,
+			deviceID, startDate, endDate,
+	)
+	if err != nil {
+			return nil, err
+	}
+	defer rows.Close()
+
+	var data []types.DeviceData
+	for rows.Next() {
+			var d types.DeviceData
+			if err := rows.Scan(&d.DeviceID, &d.Humidity, &d.Temperature, &d.Timestamp); err != nil {
+					return nil, err
+			}
+			data = append(data, d)
+	}
+	return data, nil
+}
+
+func (s *service) GetAverageData(deviceID string, startDate, endDate time.Time) (types.AverageData, error) {
+	row := s.db.QueryRow(
+			`SELECT 
+			ROUND(AVG(humidity), 2) AS average_humidity, 
+			ROUND(AVG(temperature), 2) AS average_temperature
+			FROM device_data
+			WHERE device_id = $1 AND timestamp BETWEEN $2 AND $3`,
+			deviceID, startDate, endDate,
+	)
+
+	var avgData types.AverageData
+	if err := row.Scan(&avgData.AverageHumidity, &avgData.AverageTemperature); err != nil {
+			return avgData, err
+	}
+	return avgData, nil
+}
+
+
+func (s *service) InsertDeviceData(data types.DeviceData) error {
+	_, err := s.db.Exec(
+			`INSERT INTO device_data (device_id, humidity, temperature, timestamp) VALUES ($1, $2, $3, $4)`,
+			data.DeviceID, data.Humidity, data.Temperature, data.Timestamp,
+	)
+	return err
 }
 
 // Close closes the database connection.
