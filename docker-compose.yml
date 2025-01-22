@@ -1,5 +1,14 @@
 services:
-  psql_bp:
+  web:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    command: bash -c "go run cmd/api/main.go"
+  db:
     image: postgres:latest
     restart: unless-stopped
     environment:
@@ -7,9 +16,9 @@ services:
       POSTGRES_USER: ${BLUEPRINT_DB_USERNAME}
       POSTGRES_PASSWORD: ${BLUEPRINT_DB_PASSWORD}
     ports:
-      - "${BLUEPRINT_DB_PORT}:5432"
+      - "5432:5432"
     volumes:
-      - psql_volume_bp:/var/lib/postgresql/data
+      - postgres-db:/var/lib/postgresql/data
 
 volumes:
-  psql_volume_bp:
+  postgres-db:
