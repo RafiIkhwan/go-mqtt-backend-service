@@ -52,15 +52,20 @@ npm install
 ### Step 3: Set Up Environment Variables
 Create a `.env` file in the root directory with the following variables:
 ```env
+# Web Configurations
+PORT=8080
+APP_ENV=local
+
 # PostgreSQL Configurations
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=mydatabase
-POSTGRES_USER=myuser  # Leave empty if not required
-POSTGRES_PASSWORD=mypassword  # Leave empty if not required
+BLUEPRINT_DB_HOST=localhost
+BLUEPRINT_DB_PORT=5432
+BLUEPRINT_DB_DATABASE=mydatabase
+BLUEPRINT_DB_USERNAME=myuser  # Leave empty if not required
+BLUEPRINT_DB_PASSWORD=mypassword  # Leave empty if not required
+BLUEPRINT_DB_SCHEMA=public
 
 # MQTT Configurations
-MQTT_BROKER_URL=mqtt://test.mosquitto.org
+MQTT_BROKER=mqtt://broker.emqx.io
 MQTT_TOPIC=devices/data
 ```
 

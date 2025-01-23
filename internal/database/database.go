@@ -166,8 +166,8 @@ func (s *service) GetHistoryData(deviceID string, startDate, endDate time.Time) 
 func (s *service) GetAverageData(deviceID string, startDate, endDate time.Time) (types.AverageData, error) {
 	row := s.db.QueryRow(
 			`SELECT 
-			ROUND(AVG(humidity), 2) AS average_humidity, 
-			ROUND(AVG(temperature), 2) AS average_temperature
+			ROUND(CAST(AVG(humidity) AS numeric), 2) AS average_humidity, 
+			ROUND(CAST(AVG(temperature) AS numeric), 2) AS average_temperature
 			FROM device_data
 			WHERE device_id = $1 AND timestamp BETWEEN $2 AND $3`,
 			deviceID, startDate, endDate,
