@@ -114,6 +114,12 @@ func (s *service) Health() map[string]string {
 
 
 func (s *service) GetLatestData() ([]types.DeviceData, error) {
+	// MIGRATION IF TABLE NOT EXISTS
+	_, err := s.db.Exec("CREATE TABLE IF NOT EXISTS device_data (device_id TEXT, humidity FLOAT, temperature FLOAT, timestamp TIMESTAMP)")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	rows, err := s.db.Query(`
 			SELECT DISTINCT ON (device_id) device_id, humidity, temperature, timestamp
 			FROM device_data
