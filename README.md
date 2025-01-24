@@ -1,7 +1,7 @@
-# MQTT to PostgreSQL Integration with Node.js
+# MQTT to PostgreSQL Integration with Go
 
 ## Project Overview
-This project demonstrates how to create a backend service using Node.js to process MQTT messages, store the data in a PostgreSQL database, and expose RESTful APIs for querying the stored data. The system handles JSON payloads from MQTT topics, stores the data efficiently, and provides endpoints to retrieve, filter, and analyze the data.
+This project demonstrates how to create a backend service using Go to process MQTT messages, store the data in a PostgreSQL database, and expose RESTful APIs for querying the stored data. The system handles JSON payloads from MQTT topics, stores the data efficiently, and provides endpoints to retrieve, filter, and analyze the data.
 
 ---
 
@@ -12,27 +12,17 @@ This project demonstrates how to create a backend service using Node.js to proce
 
 ---
 
-## Swagger API Documentation
-This project uses Swagger to provide interactive API documentation. You can access the Swagger UI to explore and test the API endpoints.
-
-### Accessing Swagger UI
-1. Start the server by running:
-   ```bash
-   npm start
-   ```
-
----
-
 ## Requirements
-- **Node.js** (v14 or later)
+- **Go** (v1.19 or later)
 - **PostgreSQL**
 - **MQTT Broker** (e.g., Mosquitto, HiveMQ)
 
 ### Dependencies
-- [pg](https://www.npmjs.com/package/pg): PostgreSQL client for Node.js.
-- [mqtt](https://www.npmjs.com/package/mqtt): MQTT client library.
-- [dotenv](https://www.npmjs.com/package/dotenv): For managing environment variables.
-- [express](https://www.npmjs.com/package/express): To create RESTful APIs.
+This project uses the following Go packages:
+- [github.com/eclipse/paho.mqtt.golang](https://pkg.go.dev/github.com/eclipse/paho.mqtt.golang): MQTT client library.
+- [github.com/lib/pq](https://pkg.go.dev/github.com/lib/pq): PostgreSQL client library.
+- [github.com/gin-gonic/gin](https://pkg.go.dev/github.com/gin-gonic/gin): Web framework for building APIs.
+- [github.com/joho/godotenv](https://pkg.go.dev/github.com/joho/godotenv): Loads environment variables from a `.env` file.
 
 ---
 
@@ -46,7 +36,7 @@ cd mqtt-backend-service
 
 ### Step 2: Install Dependencies
 ```bash
-npm install
+go mod tidy
 ```
 
 ### Step 3: Set Up Environment Variables
@@ -69,37 +59,39 @@ MQTT_BROKER=mqtt://broker.emqx.io
 MQTT_TOPIC=devices/data
 ```
 
-## Getting Started
+### Step 4: Run the Application
+Use the `make` commands provided in the `Makefile` to build and run the application.
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+---
 
-## MakeFile
+## Makefile Commands
 
-Run build make command with tests
+Run build and tests:
 ```bash
 make all
 ```
 
-Build the application
+Build the application:
 ```bash
 make build
 ```
 
-Run the application
+Run the application:
 ```bash
 make run
 ```
-Create DB container
+
+Create a PostgreSQL container:
 ```bash
 make docker-run
 ```
 
-Shutdown DB Container
+Shut down the PostgreSQL container:
 ```bash
 make docker-down
 ```
 
-DB Integrations Test:
+Run integration tests:
 ```bash
 make itest
 ```
@@ -114,7 +106,7 @@ Run the test suite:
 make test
 ```
 
-Clean up binary from the last build:
+Clean up binaries from the last build:
 ```bash
 make clean
 ```
@@ -138,21 +130,31 @@ CREATE TABLE device_data (
 ## Project Structure
 ```plaintext
 mqtt-backend-service/
-├── app/
-│   ├── config/
-│   │   ├── db.js           # PostgreSQL connection setup
-│   │   └── mqtt_broker.js  # MQTT broker configuration
-│   ├── routes/
-│   │   └── devices_data.js # API routes for device data
-├── src/
-│   └── subscribe.js        # Handles MQTT subscriptions and message processing
-├── .env                    # Environment variable configuration
-├── .env.example            # Example environment variables
-├── .gitignore              # Git ignore file
-├── index.js                # Entry point of the application
-├── package.json            # Project dependencies and scripts
-├── package-lock.json       # Dependency lockfile
-└── README.md               # Project documentation
+├── cmd/
+│   └── api/
+│       └── main.go          # Entry point for the application
+├── internal/
+│   ├── database/
+│   │   ├── database.go      # Database connection and queries
+│   │   └── database_test.go # Database-related tests
+│   ├── server/
+│   │   ├── routes.go        # API routes configuration
+│   │   ├── routes_test.go   # API route tests
+│   │   └── server.go        # Server setup and initialization
+│   ├── subscribe/
+│   │   └── subscribe.go     # Handles MQTT subscriptions and message processing
+│   └── types/
+│       └── types.go         # Shared data structures and types
+├── .air.toml                # Live reload configuration
+├── .env                     # Environment variable configuration
+├── .env.example             # Example environment variables
+├── .gitignore               # Git ignore file
+├── docker-compose.yml       # Docker Compose configuration
+├── dockerfile               # Dockerfile for the application
+├── go.mod                   # Go module dependencies
+├── go.sum                   # Dependency lockfile
+├── Makefile                 # Makefile for running tasks
+└── README.md                # Project documentation
 ```
 
 ---
@@ -161,7 +163,7 @@ mqtt-backend-service/
 
 ### Start the Server
 ```bash
-npm start
+make run
 ```
 
 The server will start and subscribe to the MQTT topic defined in the `.env` file.
@@ -183,7 +185,7 @@ The server will start and subscribe to the MQTT topic defined in the `.env` file
 ]
 ```
 
-#### 2. Get History Data
+#### 2. Get Historical Data
 **Endpoint**: `GET /api/data/history`
 - **Query Parameters**:
   - `start`: Start date-time (ISO 8601).
